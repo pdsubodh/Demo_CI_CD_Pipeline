@@ -42,15 +42,42 @@ jobs:
     runs-on: ubuntu-latest
 
     environment:
-      name: qa
+      name: Env-Qa 
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.QA_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.QA_HOST }} >> ~/.ssh/known_hosts
+
+
       - name: Deploy to QA Server
         run: |
-          echo "Deploying to QA server..."
-          # Example:
-          # scp -r . user@qa-server:/app
-          # ssh user@qa-server "systemctl restart app"
+          ssh ${{ secrets.QA_USER }}@${{ secrets.QA_HOST }} << 'EOF'
+          echo "Connected to QA server"
+          
+          #cd /app || mkdir /app && cd /app
+
+          # Go to specific folder
+          cd /home/codebase
+
+          # Pull latest code (if repo exists)
+          if [ -d ".git" ]; then
+            git pull origin qa
+          else
+            git clone https://github.com/${{ github.repository }} .
+          fi
+          echo "Deployment completed"
+          # Restart app (example)
+          echo "Restarting app..."
+          # systemctl restart your-app
+          EOF
+          
 
 
   deploy-production:
