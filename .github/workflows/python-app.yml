@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
 
     environment:
-      name: Env-Qa 
+      name: qa
 
     steps:
       - name: Checkout code
