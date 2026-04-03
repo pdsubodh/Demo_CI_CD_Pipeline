@@ -64,7 +64,7 @@ jobs:
           #cd /app || mkdir /app && cd /app
 
           # Go to specific folder
-          cd /home/codebase
+          cd /home/ubuntu/codebase
 
           # Pull latest code (if repo exists)
           if [ -d ".git" ]; then
