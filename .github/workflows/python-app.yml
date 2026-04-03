@@ -50,10 +50,10 @@ jobs:
 
       - name: Setup SSH
         run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.QA_SSH_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.QA_HOST }} >> ~/.ssh/known_hosts
+          mkdir -p ~/.ssh
+          echo "${{ secrets.QA_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.QA_HOST }} >> ~/.ssh/known_hosts
 
 
       - name: Deploy to QA Server
