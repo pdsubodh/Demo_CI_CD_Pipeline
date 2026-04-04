@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - qa
+      - main   # ✅ REQUIRED for production deploy
   pull_request:
     branches:
       - main
@@ -82,7 +83,6 @@ jobs:
   deploy-production:
     needs: build-and-test
     if: github.ref == 'refs/heads/main'
-    #if: github.event_name == 'pull_request' && github.base_ref == 'main'
     runs-on: ubuntu-latest
 
     environment:
