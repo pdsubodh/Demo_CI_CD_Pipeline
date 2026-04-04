@@ -81,17 +81,35 @@ jobs:
 
   deploy-production:
     needs: build-and-test
-    #if: github.ref == 'refs/heads/main'
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    if: github.ref == 'refs/heads/main'
+    #if: github.event_name == 'pull_request' && github.base_ref == 'main'
     runs-on: ubuntu-latest
 
     environment:
       name: production
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.PROD_HOST }} >> ~/.ssh/known_hosts
+    
       - name: Deploy to Production Server
         run: |
-          echo "Deploying to Production server..."
-          # Example:
-          # scp -r . user@prod-server:/app
-          # ssh user@prod-server "systemctl restart app"
+          ssh ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
+          echo "Connected to PROD server"
+          cd /home/ubuntu/codebase
+
+          if [ -d ".git" ]; then
+            git pull origin main
+          else
+            git clone https://github.com/${{ github.repository }} .
+          fi
+
+          echo "Production Deployment completed"
+          EOF
