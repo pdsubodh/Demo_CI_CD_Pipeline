@@ -1,0 +1,115 @@
+name: Demo_CI_CD_Pipeline
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+
+on:
+  push:
+    branches:
+      - qa
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Debug files
+        run: ls -R
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+            pip install -r requirements.txt || echo "No requirements file"
+            pip install pytest  
+      
+      - name: Run tests
+        run: pytest -v
+
+  deploy-qa:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/qa'
+    runs-on: ubuntu-latest
+
+    environment:
+      name: qa
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.QA_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.QA_HOST }} >> ~/.ssh/known_hosts
+
+
+      - name: Deploy to QA Server
+        run: |
+          ssh ${{ secrets.QA_USER }}@${{ secrets.QA_HOST }} << 'EOF'
+          echo "Connected to QA server"
+          
+          #cd /app || mkdir /app && cd /app
+
+          # Go to specific folder
+          cd /home/ubuntu/codebase
+
+          # Pull latest code (if repo exists)
+          if [ -d ".git" ]; then
+            git pull origin qa
+          else
+            git clone https://github.com/${{ github.repository }} .
+          fi
+          echo "Deployment completed"
+          # Restart app (example)
+          echo "Restarting app..."
+          # systemctl restart your-app
+          EOF
+          
+
+  deploy-production:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    #if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.PROD_HOST }} >> ~/.ssh/known_hosts
+    
+      - name: Deploy to Production Server
+        run: |
+          ssh ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
+          echo "Connected to PROD server"
+          cd /home/ubuntu/codebase
+
+          if [ -d ".git" ]; then
+            git pull origin main
+          else
+            git clone https://github.com/${{ github.repository }} .
+          fi
+
+          echo "Production Deployment completed"
+          EOF
